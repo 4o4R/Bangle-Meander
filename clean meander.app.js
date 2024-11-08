@@ -87,7 +87,31 @@
           if (distanceItem && typeof distanceItem.get === "function") {
             clockInfoItems.push({
               name: "Distance",
-              get: distanceItem.get
+              get: function() {
+                try {
+                  const stepData = Bangle.getHealthStatus("day").steps;
+                  const distance = (stepData * 0.000397727).toFixed(2); // Convert steps to miles
+                  return {
+                    text: distance + " mi",
+                    img: require("heatshrink").decompress(atob("gEAkFQgEEhkAhkMgEIgOAhEDwEIgeghEHwEIhEghEJhUIhUKiEKjEShkM"
+                    ))
+                  };
+                } catch(e) {
+                  return { text: "0.00 mi" };
+                }
+              }
+              show : function() {
+                this.interval = setTimeout(()=>{
+                  this.emit("redraw");
+                  this.interval = setInterval(()=>{
+                    this.emit("redraw");
+                  }, 60000);
+                }, 60000 - (Date.now() % 6000));
+              },
+             hide : function() {
+                clearInterval(this.interval);
+                this.interval = undefined;
+              }
             });
           }
         } catch (e) {
