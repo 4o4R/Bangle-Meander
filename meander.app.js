@@ -99,7 +99,7 @@
                 } catch(e) {
                   return { text: "0.00 mi" };
                 }
-              }
+              },
               show : function() {
                 this.interval = setTimeout(()=>{
                   this.emit("redraw");
@@ -147,7 +147,7 @@
   
         initialized = true;
         draw();
-      }, 200);
+      }, 200); 
     };
   
     Bangle.setUI({
