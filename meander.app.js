@@ -44,7 +44,14 @@
       r: 8
     });
 
-    if (info && info.img) g.drawImage(info.img, (options.x || 0) + 4, (options.y || 0) + 4);
+    if (info && info.img) {
+      try {
+        g.drawImage(info.img, (options.x || 0) + 4, (options.y || 0) + 4);
+      } catch(e) {
+        // If image fails, draw a simple placeholder
+        g.drawRect((options.x || 0) + 4, (options.y || 0) + 4, (options.x || 0) + 28, (options.y || 0) + 28);
+      }
+    }
 
     const title = itm && itm.name;
     const text = info && info.text ? info.text.toString() : "";
@@ -80,34 +87,50 @@
     // Load clock_info first
     clockInfoItems = require("clock_info").load();
     
-    // Add Distance item
-    clockInfoItems.push({
-      name: "Distance",
-      get: function() {
-        try {
-          const stepData = Bangle.getHealthStatus("day").steps;
-          const distance = (stepData * 0.000397727).toFixed(2);
-          return {
-            text: distance + " mi",
-            img: require("heatshrink").decompress(atob("gEAkFQgEEhkAhkMgEIgOAhEDwEIgeghEHwEIhEghEJhUIhUKiEKjEShkM"))
-          };
-        } catch(e) {
-          return { text: "0.00 mi" };
-        }
-      },
-      show: function() {
-        this.interval = setTimeout(() => {
-          this.emit("redraw");
-          this.interval = setInterval(() => {
+    // Find the Bangle category
+    let clockInfoItemsBangle = clockInfoItems.find(i => i.name == "Bangle");
+    
+    // Create a simple footsteps icon
+    let g = Graphics.createArrayBuffer(24,24,1,{msb:true});
+    g.drawLine(4,12, 12,4);  // Left leg
+    g.drawLine(12,4, 20,12); // Right leg
+    g.drawLine(8,20, 16,12); // Left foot
+    g.drawLine(16,12, 24,20); // Right foot
+    const distanceIcon = g.asImage();
+
+    // Add Distance item to Bangle category
+    if (clockInfoItemsBangle && !clockInfoItemsBangle.items.find(i => i.name == "Distance")) {
+      clockInfoItemsBangle.items.push({
+        name: "Distance",
+        get: function() {
+          try {
+            const stepData = Bangle.getHealthStatus("day").steps;
+            const distance = (stepData * 0.000397727).toFixed(2);
+            return {
+              text: distance + " mi",
+              img: distanceIcon
+            };
+          } catch(e) {
+            return { 
+              text: "0.00 mi",
+              img: distanceIcon
+            };
+          }
+        },
+        show: function() {
+          this.interval = setTimeout(() => {
             this.emit("redraw");
-          }, 60000);
-        }, 60000 - (Date.now() % 60000));
-      },
-      hide: function() {
-        clearInterval(this.interval);
-        this.interval = undefined;
-      }
-    });
+            this.interval = setInterval(() => {
+              this.emit("redraw");
+            }, 60000);
+          }, 60000 - (Date.now() % 60000));
+        },
+        hide: function() {
+          clearInterval(this.interval);
+          this.interval = undefined;
+        }
+      });
+    }
 
     const clockInfo = require("clock_info");
     
@@ -161,7 +184,6 @@
   });
 
   initLayout();
-  // Remove the setTimeout wrapper around initClockInfo
   initClockInfo();
   Bangle.drawWidgets();
 }
